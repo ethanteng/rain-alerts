@@ -1,4 +1,6 @@
 {
+  "buildCommand": null,
+  "outputDirectory": null,
   "crons": [
     {
       "path": "/api/check-precipitation",
