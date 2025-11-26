@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "openmeteo": "^1.2.2",
+    "redis": "^5.10.0",
     "resend": "^4.0.0"
   },
   "devDependencies": {
@@ -18,4 +19,3 @@
     "typescript": "^5.0.0"
   }
 }
-
