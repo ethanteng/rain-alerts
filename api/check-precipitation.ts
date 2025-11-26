@@ -15,10 +15,17 @@ export default async function handler(req: Request) {
     // Read environment variables
     const env = process.env as unknown as EnvVars;
     
-    if (!env.RESEND_API_KEY || !env.ALERT_EMAIL || !env.SENDER_EMAIL) {
-      console.error("Missing required environment variables");
+    // Check which environment variables are missing
+    const missingVars: string[] = [];
+    if (!env.RESEND_API_KEY) missingVars.push("RESEND_API_KEY");
+    if (!env.ALERT_EMAIL) missingVars.push("ALERT_EMAIL");
+    if (!env.SENDER_EMAIL) missingVars.push("SENDER_EMAIL");
+    
+    if (missingVars.length > 0) {
+      console.error("Missing required environment variables:", missingVars.join(", "));
       return Response.json({ 
-        error: "Missing required environment variables" 
+        error: "Missing required environment variables",
+        missing: missingVars
       }, { status: 500 });
     }
 
