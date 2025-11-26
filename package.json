@@ -1,0 +1,22 @@
+{
+  "name": "rain-alerts",
+  "version": "1.0.0",
+  "description": "Precipitation monitor that sends email alerts when weekly rainfall exceeds threshold",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "openmeteo": "^0.0.2",
+    "resend": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
+
