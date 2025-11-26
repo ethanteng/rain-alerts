@@ -259,6 +259,40 @@ export default async function handler(req: Request) {
     if (totalPrecipitationInches > thresholdInches) {
       console.log(`Threshold exceeded! Sending alert email...`);
 
+      // Check if we should snooze based on rainfall amount (calculate before sending email)
+      let snoozeWeeks: number | null = null;
+      let snoozeEndDate: Date | null = null;
+      
+      if (redisUrl) {
+        if (totalPrecipitationInches >= snoozeHighMin) {
+          // More than high threshold (default: >= 1.0 inches)
+          snoozeWeeks = snoozeHighWeeks;
+          console.log(`High rainfall detected (${totalPrecipitationInches.toFixed(2)}" >= ${snoozeHighMin}"), setting snooze for ${snoozeHighWeeks} weeks`);
+        } else if (totalPrecipitationInches >= snoozeMediumMin && totalPrecipitationInches <= snoozeMediumMax) {
+          // Medium range (default: 0.5-1.0 inches, inclusive)
+          snoozeWeeks = snoozeMediumWeeks;
+          console.log(`Medium rainfall detected (${totalPrecipitationInches.toFixed(2)}" in range ${snoozeMediumMin}-${snoozeMediumMax}), setting snooze for ${snoozeMediumWeeks} weeks`);
+        }
+        
+        if (snoozeWeeks !== null) {
+          // Calculate snooze end date
+          const now = Date.now();
+          const snoozeEndDateMs = now + (snoozeWeeks * 7 * 24 * 60 * 60 * 1000); // weeks to milliseconds
+          snoozeEndDate = new Date(snoozeEndDateMs);
+        }
+      }
+
+      // Format snooze end date for email
+      let snoozeMessage = "";
+      if (snoozeEndDate) {
+        const formattedDate = snoozeEndDate.toLocaleDateString('en-US', { 
+          month: 'long', 
+          day: 'numeric', 
+          year: 'numeric' 
+        });
+        snoozeMessage = `<p><strong>Turn OFF all sprinklers until ${formattedDate}.</strong></p>`;
+      }
+
       // Send email alert
       const resend = new Resend(env.RESEND_API_KEY);
 
@@ -275,6 +309,7 @@ export default async function handler(req: Request) {
             <li><strong>Total Precipitation:</strong> ${totalPrecipitationInches.toFixed(2)} inches</li>
             <li><strong>Threshold:</strong> ${thresholdInches} inches</li>
           </ul>
+          ${snoozeMessage}
         `,
       });
 
@@ -288,26 +323,13 @@ export default async function handler(req: Request) {
 
       console.log("Alert email sent successfully");
       
-      // Check if we should snooze based on rainfall amount
-      let snoozeWeeks: number | null = null;
-      if (redisUrl) {
-        if (totalPrecipitationInches >= snoozeHighMin) {
-          // More than high threshold (default: >= 1.0 inches)
-          snoozeWeeks = snoozeHighWeeks;
-          console.log(`High rainfall detected (${totalPrecipitationInches.toFixed(2)}" >= ${snoozeHighMin}"), setting snooze for ${snoozeHighWeeks} weeks`);
-        } else if (totalPrecipitationInches >= snoozeMediumMin && totalPrecipitationInches <= snoozeMediumMax) {
-          // Medium range (default: 0.5-1.0 inches, inclusive)
-          snoozeWeeks = snoozeMediumWeeks;
-          console.log(`Medium rainfall detected (${totalPrecipitationInches.toFixed(2)}" in range ${snoozeMediumMin}-${snoozeMediumMax}), setting snooze for ${snoozeMediumWeeks} weeks`);
-        }
-        
-        if (snoozeWeeks !== null) {
-          try {
-            await setSnooze(redisUrl, locationKey, snoozeWeeks);
-          } catch (error) {
-            console.error("Failed to set snooze:", error);
-            // Continue even if snooze setting fails
-          }
+      // Set snooze in Redis if applicable
+      if (snoozeWeeks !== null && redisUrl) {
+        try {
+          await setSnooze(redisUrl, locationKey, snoozeWeeks);
+        } catch (error) {
+          console.error("Failed to set snooze:", error);
+          // Continue even if snooze setting fails
         }
       }
       
