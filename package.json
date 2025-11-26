@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "openmeteo": "^0.0.2",
+    "openmeteo": "^1.2.2",
     "resend": "^4.0.0"
   },
   "devDependencies": {
